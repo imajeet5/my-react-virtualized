@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import './App.css';
 import fetchBlogs from './fetchBlogs';
 import { Grid } from 'react-virtualized';
+import VirtualRows from './virtualization/VirtualRows';
 function App() {
     const [blogs, setBlogs] = useState([]);
     const [requestStatus, setRequestStatus] = useState('loading');
@@ -12,7 +13,7 @@ function App() {
         const getBlogs = async () => {
             try {
                 // initiall we fetch 10 row then we fetch 5 rows
-                let fetchCount = offset > 0 ? 5 : 10;
+                let fetchCount =  10;
                 const blogsData = await fetchBlogs(offset, fetchCount);
                 console.log(blogsData);
                 setBlogs([...blogs, ...blogsData.blogs]);
@@ -25,7 +26,7 @@ function App() {
         getBlogs();
     }, [offset]);
 
-    const cellRenderer = ({ columnIndex, key, rowIndex, style }) => {
+    const cellRenderer = (rowIndex, style) => {
         const blog = blogs[rowIndex];
         return (
             <div
@@ -43,15 +44,16 @@ function App() {
     };
 
     const attemptLoadingNewPosts = (params) => {
-        const { rowStopIndex } = params;
+        const { endRowIndex } = params;
         // first time we are expecting to be more then 5 rows
         if (
-            rowStopIndex > 5 &&
-            (rowStopIndex + 2) % 5 === 0 &&
-            rowStopIndex + 2 > offset &&
+          endRowIndex > 5 &&
+            (endRowIndex + 3) % 10 === 0 &&
+            endRowIndex > offset && // this condition is bcz we want to load new post on in scroll bottom
+            // here offset is the last index at which post has been loaded. 
             !requestStatus.includes('loading')
         ) {
-            setOffset(rowStopIndex + 2);
+            setOffset(endRowIndex + 3);
             console.log(params);
             setRequestStatus('loadingPosts');
         }
@@ -70,29 +72,15 @@ function App() {
         content = <h2>Fail to load posts</h2>;
     }
     if (requestStatus === 'success' || requestStatus === 'loadingPosts') {
-        // content = blogs.map(blog => {
-        //     return <div key={blog.id} className='blogContainer'>
-        //       <h2>{blog.id}-{blog.title}</h2>
-        //       <p>{blog.content_text.substring(0, 320)}...</p>
-
-        //     </div>
-        // })
-
         content = (
-            <Grid
-                cellRenderer={cellRenderer}
-                columnWidth={window.innerWidth - 20}
-                columnCount={1}
+            <VirtualRows
                 height={800}
-                noContentRenderer={noContent}
-                overscanColumnCount={0}
-                overscanRowCount={0}
-                rowHeight={160}
+                onRowRenderedUpdate={attemptLoadingNewPosts}
                 rowCount={blogs.length}
-                scrollToColumn={0}
-                scrollToRow={0}
-                width={window.innerWidth}
-                onSectionRendered={attemptLoadingNewPosts}
+                rowHeight={160}
+                rowRenderer={cellRenderer}
+                scrollToRow={0} 
+                scrollTop={0}
             />
         );
     }
