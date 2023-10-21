@@ -4,6 +4,9 @@ import RowSizeAndPositionHandler from "./RowSizeAndPositionHandler";
 
 let isFirstRender = true;
 
+
+let rowComponentCache = {};
+
 const VirtualRows = ({
     rowRenderer,
     height,
@@ -12,7 +15,8 @@ const VirtualRows = ({
     rowCount,
     onRowRenderedUpdate,
     scrollTop = 0,
-    noContent
+    noContent, 
+    onScroll
 }) => {
 
 
@@ -25,20 +29,27 @@ const VirtualRows = ({
         // initiall we just want to the row range, even though they are not in viewport
         // just to get the end range where we have to fetch the blogs
         onRowRenderedUpdate(rowManager.current.getCellRangeInViewPortUnsafe({offset:scrollTop, viewPortSize:height}));
+        
     }
   
-
     useEffect(() => {
-          if(rowCount > 0){
+        if(rowCount > 0){
+        // this code will be fired, as initially row count will be 0
+        //and at that time scrollTop is value can be set once. At other time scrollTop is 
+        // anyways greater then 0. So there is no case when scrollTop is set twice if user is at zero
+        if(containerRef.current.scrollTop === 0){
+            containerRef.current.scrollTop = scrollTop;
+        }
             rowManager.current = new RowSizeAndPositionHandler({rowHeight, rowCount})
             setVisibleRowIndices(rowManager.current.getCellRangeInViewPort({offset:containerRef.current.scrollTop, viewPortSize: height}))
         }        
-    },[ rowHeight, rowCount])
+    },[ rowHeight, rowCount, scrollTop])
 
     
 
     const handleGridScroll = (event) => {
         const {startRowIndex, endRowIndex} = rowManager.current.getCellRangeInViewPort({offset:event.target.scrollTop, viewPortSize:height});
+        onScroll(event.target.scrollTop)
         if(visibleRowIndices.startRowIndex !== startRowIndex || visibleRowIndices.endRowIndex !== endRowIndex){
             setVisibleRowIndices({startRowIndex, endRowIndex});
             onRowRenderedUpdate({startRowIndex, endRowIndex})
@@ -48,7 +59,7 @@ const VirtualRows = ({
 
     const calculateRowToRender = (start, end) => {
         let childRows = [];
-        if((start === 0 && end === 0)){
+        if (start === 0 && end === 0) {
             return childRows;
         }
         let offset = rowManager.current.getOffsetOfRow(start);
@@ -60,10 +71,18 @@ const VirtualRows = ({
                 left: 0,
             };
             offset += rowHeight;
-            let row = rowRenderer(i, style);
+            // we can cache the rows as well, instead of recomputing the row over and again
+            let row;
+            if (rowComponentCache[i]) {
+                row = rowComponentCache[i];
+            } else {
+                row = rowRenderer(i, style);
+                rowComponentCache[i] = rowRenderer(i, style);
+            }
+
             childRows.push(row);
         }
-      
+
         return childRows;
     };
 

@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import './App.css';
 import fetchBlogs from './fetchBlogs';
-import { Grid } from 'react-virtualized';
 import VirtualRows from './virtualization/VirtualRows';
 
 const FetchCount = 10;
@@ -10,7 +9,6 @@ const RowMargin = 3;
 function App() {
     const [blogs, setBlogs] = useState([]);
     const [requestStatus, setRequestStatus] = useState('');
-    const observerTarget = useRef(null);
     const [postLoadedCount, setPostLoadedCount] = useState(0);
     const getBlogs = async (offset, fetchCount = FetchCount) => {
         try {
@@ -26,10 +24,6 @@ function App() {
 
     const cellRenderer = (rowIndex, style) => {
         const blog = blogs[rowIndex];
-        // if(!blog){
-        //     return
-        //     // debugger;
-        // }
         return (
             <div
                 id={blog.id}
@@ -54,14 +48,17 @@ function App() {
             //this means not post is loaded yet
             // what we do over here is what ever the page is we load that number of post
             // 14 is the endRowIndex
-            const totalPostToFetch = Math.ceil(endRowIndex / 10) * 10;
+            // this endRowIndex + 1 is to handle the case when user is exactly at 
+            // post which id divisible by 10, like 20, 50 etc, then we will load post of 
+            // next page as well
+            const totalPostToFetch = Math.ceil((endRowIndex+1) / 10) * 10;
             getBlogs(0, totalPostToFetch);
             setRequestStatus('loading');
             return;
         }
         // first time we are expecting to be more then 5 rows
         if (
-            (endRowIndex + RowMargin) % 10 === 0 &&
+            // (endRowIndex + RowMargin) % 10 === 0 &&
             endRowIndex + RowMargin >= postLoadedCount // this condition is bcz we want to load new post on in scroll bottom
             // here offset is the last index at which post has been loaded.
         ) {
@@ -70,6 +67,18 @@ function App() {
             setRequestStatus('loadingPosts');
         }
     };
+
+    const handleOnScroll = (scrollTop) => {
+        localStorage.setItem('scrollTop', scrollTop)
+    }
+
+    const getLastScrollPos = () => {
+        const lastScroll = localStorage.getItem('scrollTop');
+        if(!lastScroll){
+            return 0;
+        }
+        return parseInt(lastScroll)
+    }
 
     const noContent = () => {
         return <div className="content-shimmer noContent"></div>;
@@ -84,8 +93,9 @@ function App() {
                 rowHeight={160}
                 rowRenderer={cellRenderer}
                 scrollToRow={0}
-                scrollTop={1440}
+                scrollTop={getLastScrollPos()}
                 noContent={noContent}
+                onScroll={handleOnScroll}
             />
             {requestStatus === 'loadingPosts' && (
                 <div className="loader" id="loader-2">
