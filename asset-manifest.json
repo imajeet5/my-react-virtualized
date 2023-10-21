@@ -1,0 +1,13 @@
+{
+  "files": {
+    "main.css": "/my-react-virtualized/static/css/main.866d8b55.css",
+    "main.js": "/my-react-virtualized/static/js/main.aa72b826.js",
+    "index.html": "/my-react-virtualized/index.html",
+    "main.866d8b55.css.map": "/my-react-virtualized/static/css/main.866d8b55.css.map",
+    "main.aa72b826.js.map": "/my-react-virtualized/static/js/main.aa72b826.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.866d8b55.css",
+    "static/js/main.aa72b826.js"
+  ]
+}
