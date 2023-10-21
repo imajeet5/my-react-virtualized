@@ -1,10 +1,12 @@
 .container {
-  max-width: 1024px;
+  max-width: 640px;
   /* height: 800px; */
-  outline: 1px solid black;
+
   margin: auto;
   display:flex;
   justify-content: center;
+  align-items: center;
+  height: 100vh;
   flex-direction: column;
 }
 
@@ -16,4 +18,9 @@
 
 .title{
  text-align: center;
+}
+
+.noContent{
+  width: 100%;
+  height: 100%;
 }

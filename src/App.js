@@ -3,31 +3,33 @@ import './App.css';
 import fetchBlogs from './fetchBlogs';
 import { Grid } from 'react-virtualized';
 import VirtualRows from './virtualization/VirtualRows';
+
+const FetchCount = 10;
+const RowMargin = 3;
+
 function App() {
     const [blogs, setBlogs] = useState([]);
-    const [requestStatus, setRequestStatus] = useState('loading');
+    const [requestStatus, setRequestStatus] = useState('');
     const observerTarget = useRef(null);
-    const [offset, setOffset] = useState(0);
-
-    useEffect(() => {
-        const getBlogs = async () => {
-            try {
-                // initiall we fetch 10 row then we fetch 5 rows
-                let fetchCount =  10;
-                const blogsData = await fetchBlogs(offset, fetchCount);
-                console.log(blogsData);
-                setBlogs([...blogs, ...blogsData.blogs]);
-                setRequestStatus('success');
-            } catch (error) {
-                setRequestStatus('failure');
-            }
-        };
-
-        getBlogs();
-    }, [offset]);
+    const [postLoadedCount, setPostLoadedCount] = useState(0);
+    const getBlogs = async (offset, fetchCount = FetchCount) => {
+        try {
+            const blogsData = await fetchBlogs(offset, fetchCount);
+            console.log(blogsData);
+            setBlogs([...blogs, ...blogsData.blogs]);
+            setPostLoadedCount(offset + fetchCount);
+            setRequestStatus('success');
+        } catch (error) {
+            setRequestStatus('failure');
+        }
+    };
 
     const cellRenderer = (rowIndex, style) => {
         const blog = blogs[rowIndex];
+        // if(!blog){
+        //     return
+        //     // debugger;
+        // }
         return (
             <div
                 id={blog.id}
@@ -44,53 +46,52 @@ function App() {
     };
 
     const attemptLoadingNewPosts = (params) => {
-        const { endRowIndex } = params;
+        const { endRowIndex, startRowIndex } = params;
+        if (requestStatus.includes('loading')) {
+            return;
+        }
+        if (postLoadedCount === 0) {
+            //this means not post is loaded yet
+            // what we do over here is what ever the page is we load that number of post
+            // 14 is the endRowIndex
+            const totalPostToFetch = Math.ceil(endRowIndex / 10) * 10;
+            getBlogs(0, totalPostToFetch);
+            setRequestStatus('loading');
+            return;
+        }
         // first time we are expecting to be more then 5 rows
         if (
-          endRowIndex > 5 &&
-            (endRowIndex + 3) % 10 === 0 &&
-            endRowIndex > offset && // this condition is bcz we want to load new post on in scroll bottom
-            // here offset is the last index at which post has been loaded. 
-            !requestStatus.includes('loading')
+            (endRowIndex + RowMargin) % 10 === 0 &&
+            endRowIndex + RowMargin >= postLoadedCount // this condition is bcz we want to load new post on in scroll bottom
+            // here offset is the last index at which post has been loaded.
         ) {
-            setOffset(endRowIndex + 3);
+            getBlogs(postLoadedCount);
             console.log(params);
             setRequestStatus('loadingPosts');
         }
     };
 
     const noContent = () => {
-        return <div>No Blog Post</div>;
+        return <div className="content-shimmer noContent"></div>;
     };
 
-    let content = null;
-
-    if (requestStatus === 'loading') {
-        content = <h2 className="title">Loading...</h2>;
-    }
-    if (requestStatus === 'failure') {
-        content = <h2>Fail to load posts</h2>;
-    }
-    if (requestStatus === 'success' || requestStatus === 'loadingPosts') {
-        content = (
+    return (
+        <div className="container">
             <VirtualRows
                 height={800}
                 onRowRenderedUpdate={attemptLoadingNewPosts}
                 rowCount={blogs.length}
                 rowHeight={160}
                 rowRenderer={cellRenderer}
-                scrollToRow={0} 
-                scrollTop={0}
+                scrollToRow={0}
+                scrollTop={1440}
+                noContent={noContent}
             />
-        );
-    }
-
-    return (
-        <div className="container">
-            {content}
             {requestStatus === 'loadingPosts' && (
-                <div className="title" id="observerTarget" ref={observerTarget}>
-                    Loading...
+                <div className="loader" id="loader-2">
+                    <span></span>
+                    <span></span>
+                    <span></span>
                 </div>
             )}
         </div>
