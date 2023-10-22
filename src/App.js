@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useState } from 'react';
 import './App.css';
 import fetchBlogs from './fetchBlogs';
 import VirtualRows from './virtualization/VirtualRows';
@@ -40,7 +40,7 @@ function App() {
     };
 
     const attemptLoadingNewPosts = (params) => {
-        const { endRowIndex, startRowIndex } = params;
+        const { endRowIndex } = params;
         if (requestStatus.includes('loading')) {
             return;
         }
@@ -48,10 +48,10 @@ function App() {
             //this means not post is loaded yet
             // what we do over here is what ever the page is we load that number of post
             // 14 is the endRowIndex
-            // this endRowIndex + 1 is to handle the case when user is exactly at 
-            // post which id divisible by 10, like 20, 50 etc, then we will load post of 
+            // this endRowIndex + 1 is to handle the case when user is exactly at
+            // post which id divisible by 10, like 20, 50 etc, then we will load post of
             // next page as well
-            const totalPostToFetch = Math.ceil((endRowIndex+1) / 10) * 10;
+            const totalPostToFetch = Math.ceil((endRowIndex + 1) / 10) * 10;
             getBlogs(0, totalPostToFetch);
             setRequestStatus('loading');
             return;
@@ -59,7 +59,8 @@ function App() {
         // first time we are expecting to be more then 5 rows
         if (
             // (endRowIndex + RowMargin) % 10 === 0 &&
-            endRowIndex + RowMargin >= postLoadedCount // this condition is bcz we want to load new post on in scroll bottom
+            endRowIndex + RowMargin >=
+            postLoadedCount // this condition is bcz we want to load new post on in scroll bottom
             // here offset is the last index at which post has been loaded.
         ) {
             getBlogs(postLoadedCount);
@@ -69,16 +70,16 @@ function App() {
     };
 
     const handleOnScroll = (scrollTop) => {
-        localStorage.setItem('scrollTop', scrollTop)
-    }
+        localStorage.setItem('scrollTop', scrollTop);
+    };
 
     const getLastScrollPos = () => {
         const lastScroll = localStorage.getItem('scrollTop');
-        if(!lastScroll){
+        if (!lastScroll) {
             return 0;
         }
-        return parseInt(lastScroll)
-    }
+        return parseInt(lastScroll);
+    };
 
     const noContent = () => {
         return <div className="content-shimmer noContent"></div>;

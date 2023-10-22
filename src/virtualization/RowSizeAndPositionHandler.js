@@ -53,13 +53,6 @@ class RowSizeAndPositionHandler {
     getOffsetOfRow(index) {
         return this._rowSize * index;
     }
-
-    // binarySearch(high, low, offset){
-    //     while(low <= high){
-    //         const middle = low + Math.floor((high - low) / 2);
-
-    //     }
-    // }
 }
 
 export default RowSizeAndPositionHandler;

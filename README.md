@@ -1,70 +1,65 @@
-# Getting Started with Create React App
+# Exploring Infinite Scroll and React Virtualization
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+In the age of social media, infinite scroll has become a ubiquitous feature. Whether it's Twitter, Instagram, Facebook, or YouTube, we're all familiar with the seamless experience of loading content as we scroll. Have you ever wondered how it works under the hood? In this post, I'll take you on a journey through my experience of custom implementing infinite scroll in a React application.
 
-## Available Scripts
+## The Initial Simplicity
 
-In the project directory, you can run:
+At first glance, it seems quite simple. Set up an observer at the bottom of the last post, and when the user reaches that point, trigger an API call to load more content. The observer then shifts to watch the next post. But as I delved deeper into the task, I realized that things could get complex.
 
-### `npm start`
+## 1. Handling the Data Deluge
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+Consider an application with a vast number of posts, complete with images and videos. Loading all this data into the DOM one after the other can slow down your application. Even worse, you might have numerous DOM nodes that are out of sight but still eating up memory. This is where virtualization comes to the rescue. It only renders nodes for the current viewport, removing those that are out of sight and adding new ones as the user scrolls.
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+## 2. Keeping the Scroll Continuous
 
-### `npm test`
+Users hate waiting for the next set of posts to load. To ensure a seamless experience, we keep track of the number of posts loaded from the API. Every time a user scrolls, we check if the sum of the endRow index and a margin value is greater than the count of posts already loaded. If it is, we load the new posts.
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+## 3. Resuming the Journey
 
-### `npm run build`
+What if you want to allow users to pick up their journey from where they left off? We can store the user's scroll position in localStorage. When the user returns, we calculate the startIndex and endIndex of the posts in the viewport. Based on the endIndex, we load that number of posts the first time.
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+## 4. The Challenge of Dynamic Heights
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+One challenge we haven't tackled in this app is handling posts with dynamic heights. Calculating the start and end indexes when the post heights are unknown beforehand can be complex. It involves estimating initial post sizes and caching post heights as we fetch them. This is a task for future enhancements.
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+## Code Walkthrough
 
-### `npm run eject`
+### App.js
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+In the `App.js` file, we set up the core of our application. Here's a breakdown of what happens:
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+- **Initialization**: We start by rendering the `VirtualRows` component, the heart of our infinite scroll mechanism.
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+- **Fetching Posts**: To keep our application responsive and efficient, we load posts in batches of 10. 
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+- **Custom Rendering**: The `cellRender` function is pivotal. It gets invoked by the `VirtualRow` component with `rowIndex` and `style` as parameters. This function is responsible for rendering individual post components at the specified index.
 
-## Learn More
+- **Loading New Posts**: The `attemptLoadingNewPosts` function is fired every time new rows are rendered. It has two primary cases:
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+  1. *Initial Load*: When posts are loaded for the first time, we fetch them in multiples of 10. For instance, if the end index is 24, we'll load a total of 30 posts.
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+  2. *Subsequent Loads*: On subsequent invocations, we check if `(endRowIndex + RowMargin)` is greater than or equal to the posts already loaded. If true, we initiate the `getBlogs` function.
 
-### Code Splitting
+- **Fetching Blogs**: The `getBlogs` function is responsible for fetching blogs and updating the blog count. As the row count updates, the `VirtualRow` component re-renders with the latest data.
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
+### VirtualRows
 
-### Analyzing the Bundle Size
+In the `VirtualRows` component, we handle the dynamic rendering and scrolling logic. The key components and functions are outlined here:
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
+- **RowManager**: We initialize a `rowManager`, which is an instance of `RowSizeAndPositionHandler`. This object handles all the calculations related to row sizes and positions.
 
-### Making a Progressive Web App
+- **Initial Rendering**: On the first render, we calculate the `scrollTop` value, which is the position of the scroll. Based on this value, we determine the range of rows visible in the viewport, specifically the `startIndex` and `endIndex`. This triggers the initial loading of posts via `attemptLoadingNewPosts`.
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
+- **Managing Visible Rows**: We maintain a state variable called `visibleRowIndices` to keep track of the `startIndex` and `endIndex` of the rows currently in the viewport. This state updates as the user scrolls.
 
-### Advanced Configuration
+- **Scroll Handling**: The `handleGridScroll` function plays a crucial role. It updates the `startRow` and `endRow` indices if they differ from the current values. Additionally, it passes the new values to check if new posts need to be fetched.
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
+- **Rendering Rows**: The `calculateRowToRender` function dynamically creates new row components based on the `startIndex` and `endIndex`. It calculates the offset of the start index, which represents the position from the top of the starting row.
 
-### Deployment
+### RowSizeAndPositionHandler
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
+The `RowSizeAndPositionHandler` component contains the logic for computing row positions and ranges. It includes two important functions:
 
-### `npm run build` fails to minify
+- **`getCellRangeInViewPortUnsafe`**: This function is used for the initial load, even if cells are not in the viewport. It's crucial for the initial data retrieval.
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+- **`getCellRangeInViewPort`**: This function provide the cell range that can be safely rendered in the viewport.

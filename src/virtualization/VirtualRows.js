@@ -4,58 +4,53 @@ import RowSizeAndPositionHandler from "./RowSizeAndPositionHandler";
 
 let isFirstRender = true;
 
-
-let rowComponentCache = {};
-
 const VirtualRows = ({
     rowRenderer,
     height,
     rowHeight,
-    scrollToRow,
     rowCount,
     onRowRenderedUpdate,
     scrollTop = 0,
-    noContent, 
+    noContent,
     onScroll
 }) => {
 
 
-    const rowManager = useRef(new RowSizeAndPositionHandler({rowHeight, rowCount}));
-    const [visibleRowIndices,setVisibleRowIndices] = useState(rowManager.current.getCellRangeInViewPort({offset:scrollTop, viewPortSize:height}));
+    const rowManager = useRef(new RowSizeAndPositionHandler({ rowHeight, rowCount }));
+    const [visibleRowIndices, setVisibleRowIndices] = useState(rowManager.current.getCellRangeInViewPort({ offset: scrollTop, viewPortSize: height }));
     const containerRef = useRef(null);
     // const isFirstRender = useRef(true);
-    if(isFirstRender){
+    if (isFirstRender) {
         isFirstRender = false;
         // initiall we just want to the row range, even though they are not in viewport
         // just to get the end range where we have to fetch the blogs
-        onRowRenderedUpdate(rowManager.current.getCellRangeInViewPortUnsafe({offset:scrollTop, viewPortSize:height}));
-        
-    }
-  
-    useEffect(() => {
-        if(rowCount > 0){
-        // this code will be fired, as initially row count will be 0
-        //and at that time scrollTop is value can be set once. At other time scrollTop is 
-        // anyways greater then 0. So there is no case when scrollTop is set twice if user is at zero
-        if(containerRef.current.scrollTop === 0){
-            containerRef.current.scrollTop = scrollTop;
-        }
-            rowManager.current = new RowSizeAndPositionHandler({rowHeight, rowCount})
-            setVisibleRowIndices(rowManager.current.getCellRangeInViewPort({offset:containerRef.current.scrollTop, viewPortSize: height}))
-        }        
-    },[ rowHeight, rowCount, scrollTop])
+        onRowRenderedUpdate(rowManager.current.getCellRangeInViewPortUnsafe({ offset: scrollTop, viewPortSize: height }));
 
-    
+    }
+
+    useEffect(() => {
+        if (rowCount > 0) {
+            // this code will be fired, as initially row count will be 0
+            //and at that time scrollTop is value can be set once. At other time scrollTop is 
+            // anyways greater then 0. So there is no case when scrollTop is set twice if user is at zero
+            if (containerRef.current.scrollTop === 0) {
+                containerRef.current.scrollTop = scrollTop;
+            }
+            rowManager.current = new RowSizeAndPositionHandler({ rowHeight, rowCount })
+            setVisibleRowIndices(rowManager.current.getCellRangeInViewPort({ offset: containerRef.current.scrollTop, viewPortSize: height }))
+        }
+    }, [rowHeight, rowCount, scrollTop])
+
+
 
     const handleGridScroll = (event) => {
-        const {startRowIndex, endRowIndex} = rowManager.current.getCellRangeInViewPort({offset:event.target.scrollTop, viewPortSize:height});
+        const { startRowIndex, endRowIndex } = rowManager.current.getCellRangeInViewPort({ offset: event.target.scrollTop, viewPortSize: height });
         onScroll(event.target.scrollTop)
-        if(visibleRowIndices.startRowIndex !== startRowIndex || visibleRowIndices.endRowIndex !== endRowIndex){
-            setVisibleRowIndices({startRowIndex, endRowIndex});
-            onRowRenderedUpdate({startRowIndex, endRowIndex})
+        if (visibleRowIndices.startRowIndex !== startRowIndex || visibleRowIndices.endRowIndex !== endRowIndex) {
+            setVisibleRowIndices({ startRowIndex, endRowIndex });
+            onRowRenderedUpdate({ startRowIndex, endRowIndex })
         }
     }
-
 
     const calculateRowToRender = (start, end) => {
         let childRows = [];
@@ -71,30 +66,24 @@ const VirtualRows = ({
                 left: 0,
             };
             offset += rowHeight;
-            // we can cache the rows as well, instead of recomputing the row over and again
+          
             let row;
-            if (rowComponentCache[i]) {
-                row = rowComponentCache[i];
-            } else {
-                row = rowRenderer(i, style);
-                rowComponentCache[i] = rowRenderer(i, style);
-            }
-
+            row = rowRenderer(i, style);
             childRows.push(row);
         }
 
         return childRows;
     };
 
-    const totalRowHeight = rowHeight * rowCount;
+    const totalRowHeight = rowManager.current.getTotalSize();
     const containerStyles = {
         height: height,
         width: '100%',
         overflowY: 'scroll',
-        background:'white',
-        border:'1px solid black',
-        borderRadius:'15px',
-        boxShadow:'3px 3px 10px 1px'
+        background: 'white',
+        border: '1px solid black',
+        borderRadius: '15px',
+        boxShadow: '3px 3px 10px 1px'
     };
     const scrollContainer = {
         width: '100%',
@@ -103,7 +92,7 @@ const VirtualRows = ({
         overflow: 'hidden',
         position: 'relative',
     };
-    const {startRowIndex, endRowIndex} = visibleRowIndices;
+    const { startRowIndex, endRowIndex } = visibleRowIndices;
     return (
         <div style={containerStyles} onScroll={handleGridScroll} ref={containerRef}>
             {rowCount === 0 && noContent()}
