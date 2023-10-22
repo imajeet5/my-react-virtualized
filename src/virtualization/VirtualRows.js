@@ -11,7 +11,7 @@ const VirtualRows = ({
     rowCount,
     onRowRenderedUpdate,
     scrollTop = 0,
-    noContent,
+    noContent, 
     onScroll
 }) => {
 
@@ -75,7 +75,7 @@ const VirtualRows = ({
         return childRows;
     };
 
-    const totalRowHeight = rowManager.current.getTotalSize();
+    const totalRowHeight = rowHeight * rowCount;
     const containerStyles = {
         height: height,
         width: '100%',
