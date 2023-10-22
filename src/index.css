@@ -49,6 +49,8 @@ code {
   justify-content: center;
   gap: 5px;
   margin-top: 25px;
+  position: absolute;
+  top: 100%;
 }
 #loader-2 span{
   display: inline-block;

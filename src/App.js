@@ -98,7 +98,7 @@ function App() {
                 noContent={noContent}
                 onScroll={handleOnScroll}
             />
-            {requestStatus === 'loadingPosts' && (
+             {requestStatus === 'loadingPosts' && (
                 <div className="loader" id="loader-2">
                     <span></span>
                     <span></span>
